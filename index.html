@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevStore | Asistente IA</title>
+    <style>
+        :root {
+            --primary: #0071e3;
+            --bg: #ffffff;
+            --bot-bubble: #f2f2f7;
+            --user-bubble: #0071e3;
+            --text-main: #1d1d1f;
+            --border: #d2d2d7;
+        }
+
+        body {
+            background-color: #f5f5f7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #chat-container {
+            width: 100%;
+            max-width: 500px;
+            height: 80vh;
+            background: var(--bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        #chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+            background: #fff;
+        }
+
+        #chat-header h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        #chat-header p { margin: 5px 0 0; font-size: 0.8rem; color: #1a8917; font-weight: bold; }
+
+        #messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; }
+        .bot { background: var(--bot-bubble); color: var(--text-main); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .user { background: var(--user-bubble); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+
+        .options-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .option-btn {
+            background: white;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .option-btn:hover { background: var(--primary); color: white; }
+
+        #input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            background: #fff;
+        }
+
+        input[type="text"], input[type="email"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .crypto-card {
+            background: #f9f9fb;
+            border: 1px dashed var(--primary);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            text-align: center;
+        }
+
+        .loader {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #1a8917;
+            margin-top: 10px;
+        }
+
+        .dot-pulse {
+            width: 6px; height: 6px; background: #1a8917; border-radius: 50%;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-header">
+        <h2>Asistente de DevStore</h2>
+        <p>● En línea | Entrega Inmediata</p>
+    </div>
+    
+    <div id="messages">
+        </div>
+
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Escribe un mensaje..." disabled>
+        <button class="send-btn" id="send-trigger">Enviar</button>
+    </div>
+</div>
+
+<script>
+    const messagesContainer = document.getElementById('messages');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-trigger');
+
+    const tools = {
+        "ACTIVATION TUNNEL": 56,
+        "Kernel Shield Pro": 140,
+        "API Stressor X": 80,
+        "Data Flow Scrubber": 69,
+        "Static Analyzer": 60,
+        "Macro Bot Script": 50,
+        "Port Whisperer": 28,
+        "Proxy Linker": 26,
+        "JSON Beautifier+": 12
+    };
+
+    const crypto = {
+        "ETH": "0x818a874e7013ACb4582f0e7b6CE916bA79Ce5ACa",
+        "BTC": "bc1q2wzz4l87pvkzc8n24xeh5jhh0m5w6hkd8mzfv7",
+        "USDT": "0x818a874e7013ACb4582f0e7b6CE916bA79Ce5ACa"
+    };
+
+    let state = 'SELECT_TOOL';
+    let selectedTool = '';
+    let email = '';
+
+    function addMessage(text, sender) {
+        const msg = document.createElement('div');
+        msg.className = `message ${sender}`;
+        msg.innerHTML = text;
+        messagesContainer.appendChild(msg);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function showOptions(options) {
+        const container = document.createElement('div');
+        container.className = 'options-container';
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => handleInput(opt);
+            container.appendChild(btn);
+        });
+        messagesContainer.appendChild(container);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function initChat() {
+        addMessage("¡Hola! Soy tu asistente de DevStore. ¿Qué herramienta profesional estás buscando hoy?", "bot");
+        showOptions(Object.keys(tools));
+    }
+
+    function handleInput(input) {
+        if (state === 'SELECT_TOOL') {
+            selectedTool = input;
+            addMessage(input, "user");
+            addMessage(`Excelente elección. El **${selectedTool}** tiene un costo de €${tools[selectedTool]}. <br><br>Por favor, introduce tu correo electrónico donde deseas recibir la herramienta:`, "bot");
+            userInput.disabled = false;
+            userInput.type = "email";
+            state = 'ENTER_EMAIL';
+        } 
+        else if (state === 'ENTER_EMAIL') {
+            email = input;
+            addMessage(email, "user");
+            addMessage(`Perfecto. ¿Qué criptomoneda prefieres usar para el pago de €${tools[selectedTool]}?`, "bot");
+            showOptions(['ETH', 'BTC', 'USDT']);
+            state = 'SELECT_CRYPTO';
+            userInput.value = "";
+            userInput.disabled = true;
+        }
+        else if (state === 'SELECT_CRYPTO') {
+            addMessage(input, "user");
+            addMessage(`Por favor, envía el pago a la siguiente dirección de **${input}**:`, "bot");
+            addMessage(`<div class="crypto-card">${crypto[input]}</div>`, "bot");
+            addMessage(`Una vez enviado, adjunta una captura de pantalla del comprobante para comenzar con la activación.`, "bot");
+            
+            const uploadBtn = document.createElement('input');
+            uploadBtn.type = "file";
+            uploadBtn.style.marginTop = "10px";
+            uploadBtn.onchange = () => {
+                addMessage("Captura recibida. Analizando transacción...", "bot");
+                addMessage(`
+                    <div class="loader">
+                        <div class="dot-pulse"></div>
+                        Buscando confirmaciones en la blockchain...
+                    </div>
+                `, "bot");
+            };
+            messagesContainer.appendChild(uploadBtn);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+
+    sendBtn.onclick = () => {
+        if (userInput.value.trim() !== "") {
+            handleInput(userInput.value);
+        }
+    };
+
+    userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendBtn.click();
+    });
+
+    initChat();
+</script>
+
+</body>
+</html>
